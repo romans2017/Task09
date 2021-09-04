@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,14 +86,27 @@ public class ReadWriteTextFiles {
 
     }
 
+    private static class IpData {
+        private Integer numberVisits = 1;
+        private final Map<String, Integer> mapNumberVisitsPerHour = new HashMap<>();
+        private final Map<String, Integer> mapNumberVisitsPerDay = new HashMap<>();
+        private String popularHour;
+        private String popularDay;
+    }
+
     public static void statisticByIp() {
-        Set<String> set = readFile(".\\src\\main\\resources\\IP.txt", PATTERN_DELIMITER_TXT);
-        String stringPatternTime = "\\d{2}\\:\\d{2}\\:\\d{2}";
+        Set<String> setLines = readFile(".\\src\\main\\resources\\IP.txt", PATTERN_DELIMITER_TXT);
+        Map<String, IpData> mapIpNumberVisits = new HashMap<>();
+        Map<String, Integer> numberVisitsPerHour = new HashMap<>();
+        /*Map<String, Integer> mapIpNumberVisits = new HashMap<>();
+        Map<Ip, Integer> mapIpNumberDays = new HashMap<>();
+        Map<Ip, Integer> mapIpNumberHours = new HashMap<>();*/
+        /*String stringPatternTime = "\\d{2}\\:\\d{2}\\:\\d{2}";
         String ip = "";
         String time = "";
-        String day = "";
-        for (String line : set) {
-            Pattern pattern = Pattern.compile(".*(?=" + stringPatternTime + ")");
+        String day = "";*/
+        for (String line : setLines) {
+            /*Pattern pattern = Pattern.compile(".*(?=" + stringPatternTime + ")");
             Matcher matcher = pattern.matcher(line);
             if (matcher.find()) {
                 ip = matcher.group().trim();
@@ -107,13 +121,45 @@ public class ReadWriteTextFiles {
             matcher = pattern.matcher(line);
             if (matcher.find()) {
                 day = matcher.group().trim();
-            }
+            }*/
+            String[] splitLine = line.split(" ");
+            String ip = splitLine[0].trim();
+            String time = splitLine[1].trim();
+            String day = splitLine[2].trim();
+            IpData curValue = mapIpNumberVisits.merge(ip, new IpData(), (oldValue, newValue) -> {
+                oldValue.numberVisits += newValue.numberVisits;
+                return oldValue;
+            });
+            curValue.mapNumberVisitsPerHour.merge(day, 1, Integer::sum);
+            curValue.mapNumberVisitsPerDay.merge(time.substring(0, 2), 1, Integer::sum);
 
+            numberVisitsPerHour.merge(time.substring(0, 2), 1, Integer::sum);
+
+            /*mapIpNumberVisits.merge(ip, 1, Integer::sum);
+            mapIpNumberDays.merge(new Ip(ip, "", day), 1, Integer::sum);
+            mapIpNumberHours.merge(new Ip(ip, time.substring(0, 2), ""), 1, Integer::sum);*/
         }
+        TreeSet<Map.Entry<String, Integer>> set = new TreeSet<>(Map.Entry.comparingByValue(Comparator.reverseOrder()));
+        set.addAll(numberVisitsPerHour.entrySet());
+        String popularHourInTotal = set.first().getKey();
+
+        List<String> resultList = new ArrayList<>();
+        mapIpNumberVisits.forEach((key, value) -> {
+            TreeSet<Map.Entry<String, Integer>> setValue = new TreeSet<>(Map.Entry.comparingByValue(Comparator.reverseOrder()));
+            setValue.addAll(value.mapNumberVisitsPerHour.entrySet());
+            value.popularDay = setValue.first().getKey();
+            setValue.clear();
+            setValue.addAll(value.mapNumberVisitsPerDay.entrySet());
+            value.popularHour = setValue.first().getKey();
+            resultList.add(key + " " + value.numberVisits + " " + value.popularDay + " " + value.popularHour);
+        });
+        resultList.add(popularHourInTotal);
+        System.out.println(resultList);
+        writeFile("statisticByIp.txt", resultList);
     }
 
     public static void main(String[] args) {
-        //compareFiles();
+        compareFiles();
         statisticByIp();
     }
 
