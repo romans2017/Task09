@@ -146,7 +146,7 @@ public class ReadWriteTextFiles {
             setValue.clear();
             setValue.addAll(value.mapNumberVisitsPerDay.entrySet());
             value.popularHour = setValue.first().getKey();
-            resultList.add(key + " " + value.numberVisits + " " + value.popularDay + " " + value.popularHour);
+            resultList.add(key + " " + value.numberVisits + " " + value.popularDay + " " + value.popularHour + "\n");
         });
         resultList.add(popularHourInTotal);
         System.out.println(resultList);
